@@ -74,6 +74,7 @@ async function run() {
     'email = ?',
     ['admin@cod-merchant.local'],
     {
+      platform_role_id: superAdminRoleId,
       first_name: 'System',
       last_name: 'Admin',
       email: 'admin@cod-merchant.local',
@@ -156,6 +157,7 @@ async function run() {
     {
       merchant_id: merchantId,
       branch_id: branchId,
+      merchant_role_id: managerRoleId,
       first_name: 'Branch',
       last_name: 'Manager',
       email: 'manager@cod-merchant.local',
