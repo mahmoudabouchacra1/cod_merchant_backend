@@ -20,6 +20,40 @@ async function getOrCreate(table, whereClause, whereParams, data) {
 }
 
 async function run() {
+  const permissionResources = [
+    { key: 'platform-admin', group: 'Platform' },
+    { key: 'platform-role', group: 'Platform' },
+    { key: 'platform-permission', group: 'Platform' },
+    { key: 'platform-role-permission', group: 'Platform' },
+    { key: 'merchant', group: 'Merchant' },
+    { key: 'branch', group: 'Merchant' },
+    { key: 'user', group: 'Merchant' },
+    { key: 'permission', group: 'Merchant' },
+    { key: 'branch-role', group: 'Merchant' },
+    { key: 'branch-role-permission', group: 'Merchant' }
+  ];
+  const actions = [
+    { key: 'create', label: 'Create' },
+    { key: 'view', label: 'View' },
+    { key: 'update', label: 'Update' },
+    { key: 'delete', label: 'Delete' }
+  ];
+
+  for (const resource of permissionResources) {
+    for (const action of actions) {
+      await getOrCreate(
+        'platform_permissions',
+        'key_name = ?',
+        [`${action.key}-${resource.key}`],
+        {
+          key_name: `${action.key}-${resource.key}`,
+          description: `${action.label} ${resource.key.replace(/-/g, ' ')}`,
+          group_name: resource.group
+        }
+      );
+    }
+  }
+
   const superAdminRoleId = await getOrCreate(
     'platform_roles',
     'name = ?',
@@ -34,6 +68,16 @@ async function run() {
     { name: 'Support', description: 'Support staff', is_system: true }
   );
 
+  const [platformPermissions] = await pool.query('SELECT id FROM platform_permissions');
+  for (const perm of platformPermissions) {
+    await getOrCreate(
+      'platform_role_permissions',
+      'platform_role_id = ? AND platform_permission_id = ?',
+      [superAdminRoleId, perm.id],
+      { platform_role_id: superAdminRoleId, platform_permission_id: perm.id }
+    );
+  }
+
   const approveMerchantPermId = await getOrCreate(
     'platform_permissions',
     'key_name = ?',
@@ -46,20 +90,6 @@ async function run() {
     'key_name = ?',
     ['suspend-branch'],
     { key_name: 'suspend-branch', description: 'Suspend branch', group_name: 'Merchants' }
-  );
-
-  await getOrCreate(
-    'platform_role_permissions',
-    'platform_role_id = ? AND platform_permission_id = ?',
-    [superAdminRoleId, approveMerchantPermId],
-    { platform_role_id: superAdminRoleId, platform_permission_id: approveMerchantPermId }
-  );
-
-  await getOrCreate(
-    'platform_role_permissions',
-    'platform_role_id = ? AND platform_permission_id = ?',
-    [superAdminRoleId, suspendBranchPermId],
-    { platform_role_id: superAdminRoleId, platform_permission_id: suspendBranchPermId }
   );
 
   await getOrCreate(
