@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const platformAdminsRepo = require('../../repository/Platform/platformAdminsRepo');
+const { hashPassword, isHashed, verifyPassword } = require('../../utils/password');
 
 const ACCESS_TTL = process.env.JWT_ACCESS_TTL || '15m';
 const REFRESH_TTL = process.env.JWT_REFRESH_TTL || '7d';
@@ -42,7 +43,20 @@ async function login(req, res, next) {
     }
 
     const admin = await platformAdminsRepo.findByEmail(email);
-    if (!admin || admin.password !== password) {
+    if (!admin) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    let passwordValid = false;
+    if (isHashed(admin.password)) {
+      passwordValid = await verifyPassword(password, admin.password);
+    } else if (admin.password === password) {
+      passwordValid = true;
+      const nextHash = await hashPassword(password);
+      await platformAdminsRepo.update(admin.id, { password: nextHash });
+    }
+
+    if (!passwordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -113,7 +127,7 @@ async function register(req, res, next) {
       first_name,
       last_name,
       email,
-      password,
+      password: await hashPassword(password),
       platform_role_id: platform_role_id || null,
       status: status || 'active'
     });

@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const pool = require('../db');
 const { buildInsert } = require('../repository/common');
+const { hashPassword } = require('../utils/password');
 
 async function getOrCreate(table, whereClause, whereParams, data) {
   const [rows] = await pool.query(
@@ -108,7 +109,7 @@ async function run() {
       first_name: 'System',
       last_name: 'Admin',
       email: 'admin@cod-merchant.local',
-      password: 'change-me',
+      password: await hashPassword('change-me'),
       status: 'active'
     }
   );
@@ -192,7 +193,7 @@ async function run() {
       last_name: 'Manager',
       email: 'manager@cod-merchant.local',
       phone: '+10000000001',
-      password: 'change-me',
+      password: await hashPassword('change-me'),
       status: 'active'
     }
   );

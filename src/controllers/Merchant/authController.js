@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const pool = require('../../db');
 const usersRepo = require('../../repository/Merchant/usersRepo');
 const { buildInsert } = require('../../repository/common');
+const { hashPassword, isHashed, verifyPassword } = require('../../utils/password');
 
 const ACCESS_TTL = process.env.JWT_ACCESS_TTL || '15m';
 const REFRESH_TTL = process.env.JWT_REFRESH_TTL || '7d';
@@ -52,7 +53,20 @@ async function login(req, res, next) {
     }
 
     const user = await usersRepo.findByEmail(email);
-    if (!user || user.password !== password) {
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    let passwordValid = false;
+    if (isHashed(user.password)) {
+      passwordValid = await verifyPassword(password, user.password);
+    } else if (user.password === password) {
+      passwordValid = true;
+      const nextHash = await hashPassword(password);
+      await usersRepo.update(user.id, { password: nextHash });
+    }
+
+    if (!passwordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -238,7 +252,7 @@ async function register(req, res, next) {
         last_name: admin_last_name,
         email: admin_email,
         phone: admin_phone || null,
-        password: admin_password,
+        password: await hashPassword(admin_password),
         status: 'active'
       },
       [
