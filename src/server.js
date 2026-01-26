@@ -8,10 +8,23 @@ const app = express();
 
 const apiRoutes = require('./routes');
 
+function requestLogger(req, res, next) {
+  const startedAt = Date.now();
+  res.on('finish', () => {
+    const durationMs = Date.now() - startedAt;
+    const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '-';
+    console.log(
+      `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms - ${ip}`
+    );
+  });
+  next();
+}
+
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true
 }));
+app.use(requestLogger);
 app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 app.use('/api/v1', apiRoutes);
