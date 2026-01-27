@@ -7,6 +7,14 @@ const { hashPassword, isHashed, verifyPassword } = require('../../utils/password
 const ACCESS_TTL = process.env.JWT_ACCESS_TTL || '15m';
 const REFRESH_TTL = process.env.JWT_REFRESH_TTL || '7d';
 
+function getBearerToken(req) {
+  const authHeader = req.headers.authorization || '';
+  if (authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7);
+  }
+  return null;
+}
+
 function signAccessToken(user) {
   return jwt.sign(
     {
@@ -85,7 +93,9 @@ async function login(req, res, next) {
       last_name: user.last_name,
       merchant_id: user.merchant_id,
       branch_id: user.branch_id,
-      merchant_role_id: user.merchant_role_id || null
+      merchant_role_id: user.merchant_role_id || null,
+      access_token: accessToken,
+      refresh_token: refreshToken
     });
   } catch (err) {
     return next(err);
@@ -94,7 +104,7 @@ async function login(req, res, next) {
 
 async function refresh(req, res) {
   try {
-    const refreshToken = req.cookies?.merchant_refresh_token;
+    const refreshToken = req.cookies?.merchant_refresh_token || getBearerToken(req) || req.body?.refresh_token;
     if (!refreshToken) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -115,7 +125,7 @@ async function refresh(req, res) {
     res.cookie('merchant_access_token', accessToken, { ...cookieOptions(), maxAge: 1000 * 60 * 15 });
     res.cookie('merchant_refresh_token', nextRefreshToken, { ...cookieOptions(), maxAge: 1000 * 60 * 60 * 24 * 7 });
 
-    return res.json({ ok: true });
+    return res.json({ ok: true, access_token: accessToken, refresh_token: nextRefreshToken });
   } catch (err) {
     return res.status(401).json({ error: 'Unauthorized' });
   }

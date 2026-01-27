@@ -6,6 +6,14 @@ const { isNonEmptyString, isValidEmail, addError, hasErrors } = require('../../u
 const ACCESS_TTL = process.env.JWT_ACCESS_TTL || '15m';
 const REFRESH_TTL = process.env.JWT_REFRESH_TTL || '7d';
 
+function getBearerToken(req) {
+  const authHeader = req.headers.authorization || '';
+  if (authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7);
+  }
+  return null;
+}
+
 function signAccessToken(admin) {
   return jwt.sign(
     {
@@ -81,7 +89,9 @@ async function login(req, res, next) {
       email: admin.email,
       first_name: admin.first_name,
       last_name: admin.last_name,
-      platform_role_id: admin.platform_role_id || null
+      platform_role_id: admin.platform_role_id || null,
+      access_token: accessToken,
+      refresh_token: refreshToken
     });
   } catch (err) {
     return next(err);
@@ -90,7 +100,7 @@ async function login(req, res, next) {
 
 async function refresh(req, res, next) {
   try {
-    const refreshToken = req.cookies?.refresh_token;
+    const refreshToken = req.cookies?.refresh_token || getBearerToken(req) || req.body?.refresh_token;
     if (!refreshToken) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -107,7 +117,7 @@ async function refresh(req, res, next) {
     res.cookie('access_token', accessToken, { ...cookieOptions(), maxAge: 1000 * 60 * 15 });
     res.cookie('refresh_token', nextRefreshToken, { ...cookieOptions(), maxAge: 1000 * 60 * 60 * 24 * 7 });
 
-    return res.json({ ok: true });
+    return res.json({ ok: true, access_token: accessToken, refresh_token: nextRefreshToken });
   } catch (err) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
