@@ -1,4 +1,5 @@
 const service = require('../../services/Platform/platformRolePermissionsService');
+const { isPositiveNumber } = require('../../utils/validation');
 
 async function list(req, res, next) {
   try {
@@ -12,7 +13,7 @@ async function list(req, res, next) {
 async function getById(req, res, next) {
   try {
     const id = Number(req.params.id);
-    if (!id) {
+    if (!isPositiveNumber(id)) {
       return res.status(400).json({ error: 'Invalid id' });
     }
     const row = await service.getById(id);
@@ -31,6 +32,10 @@ async function create(req, res, next) {
     if (Object.keys(payload).length === 0) {
       return res.status(400).json({ error: 'Empty payload' });
     }
+    const { platform_role_id, platform_permission_id } = payload;
+    if (!isPositiveNumber(platform_role_id) || !isPositiveNumber(platform_permission_id)) {
+      return res.status(400).json({ error: 'platform_role_id and platform_permission_id are required' });
+    }
     const result = await service.create(payload);
     if (!result.insertId) {
       return res.status(400).json({ error: 'Insert failed' });
@@ -44,12 +49,24 @@ async function create(req, res, next) {
 async function update(req, res, next) {
   try {
     const id = Number(req.params.id);
-    if (!id) {
+    if (!isPositiveNumber(id)) {
       return res.status(400).json({ error: 'Invalid id' });
     }
     const payload = req.body || {};
     if (Object.keys(payload).length === 0) {
       return res.status(400).json({ error: 'Empty payload' });
+    }
+    const allowedKeys = ['platform_role_id', 'platform_permission_id'];
+    const payloadKeys = Object.keys(payload);
+    const invalidKey = payloadKeys.find((key) => !allowedKeys.includes(key));
+    if (invalidKey) {
+      return res.status(400).json({ error: `Unknown field: ${invalidKey}` });
+    }
+    if (payload.platform_role_id !== undefined && !isPositiveNumber(payload.platform_role_id)) {
+      return res.status(400).json({ error: 'platform_role_id must be a positive number' });
+    }
+    if (payload.platform_permission_id !== undefined && !isPositiveNumber(payload.platform_permission_id)) {
+      return res.status(400).json({ error: 'platform_permission_id must be a positive number' });
     }
     const result = await service.update(id, payload);
     if (!result.affectedRows) {

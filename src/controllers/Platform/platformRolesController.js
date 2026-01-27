@@ -1,4 +1,9 @@
 const service = require('../../services/Platform/platformRolesService');
+const { isNonEmptyString, isPositiveNumber } = require('../../utils/validation');
+
+function isBooleanLike(value) {
+  return typeof value === 'boolean' || value === 0 || value === 1 || value === '0' || value === '1';
+}
 
 async function list(req, res, next) {
   try {
@@ -12,7 +17,7 @@ async function list(req, res, next) {
 async function getById(req, res, next) {
   try {
     const id = Number(req.params.id);
-    if (!id) {
+    if (!isPositiveNumber(id)) {
       return res.status(400).json({ error: 'Invalid id' });
     }
     const row = await service.getById(id);
@@ -31,6 +36,16 @@ async function create(req, res, next) {
     if (Object.keys(payload).length === 0) {
       return res.status(400).json({ error: 'Empty payload' });
     }
+    const { name, description, is_system } = payload;
+    if (!isNonEmptyString(name)) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    if (description !== undefined && description !== null && !isNonEmptyString(description)) {
+      return res.status(400).json({ error: 'description must be a non-empty string' });
+    }
+    if (is_system !== undefined && is_system !== null && !isBooleanLike(is_system)) {
+      return res.status(400).json({ error: 'is_system must be boolean' });
+    }
     const result = await service.create(payload);
     if (!result.insertId) {
       return res.status(400).json({ error: 'Insert failed' });
@@ -44,12 +59,27 @@ async function create(req, res, next) {
 async function update(req, res, next) {
   try {
     const id = Number(req.params.id);
-    if (!id) {
+    if (!isPositiveNumber(id)) {
       return res.status(400).json({ error: 'Invalid id' });
     }
     const payload = req.body || {};
     if (Object.keys(payload).length === 0) {
       return res.status(400).json({ error: 'Empty payload' });
+    }
+    const allowedKeys = ['name', 'description', 'is_system'];
+    const payloadKeys = Object.keys(payload);
+    const invalidKey = payloadKeys.find((key) => !allowedKeys.includes(key));
+    if (invalidKey) {
+      return res.status(400).json({ error: `Unknown field: ${invalidKey}` });
+    }
+    if (payload.name !== undefined && !isNonEmptyString(payload.name)) {
+      return res.status(400).json({ error: 'name must be a non-empty string' });
+    }
+    if (payload.description !== undefined && payload.description !== null && !isNonEmptyString(payload.description)) {
+      return res.status(400).json({ error: 'description must be a non-empty string' });
+    }
+    if (payload.is_system !== undefined && payload.is_system !== null && !isBooleanLike(payload.is_system)) {
+      return res.status(400).json({ error: 'is_system must be boolean' });
     }
     const result = await service.update(id, payload);
     if (!result.affectedRows) {
