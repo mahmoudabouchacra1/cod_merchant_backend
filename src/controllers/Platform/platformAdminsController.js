@@ -158,7 +158,7 @@ async function uploadPhoto(req, res, next) {
     if (!req.file) {
       return res.status(400).json({ error: 'Photo is required' });
     }
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
     const url = `${baseUrl}/uploads/${req.file.filename}`;
     const result = await service.update(id, { avatar_url: url });
     if (!result.affectedRows) {
