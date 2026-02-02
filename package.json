@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "node src/server.js",
     "seed": "node src/seed/index.js",
+    "hash-passwords": "node src/scripts/hash-passwords.js",
     "client": "npm --prefix frontend run dev"
   },
   "dependencies": {

@@ -84,14 +84,11 @@ async function login(req, res, next) {
 
     const admin = await platformAdminsRepo.findByEmail(email);
     if (admin) {
-      let passwordValid = false;
-      if (isHashed(admin.password)) {
-        passwordValid = await verifyPassword(password, admin.password);
-      } else if (admin.password === password) {
-        passwordValid = true;
-        const nextHash = await hashPassword(password);
-        await platformAdminsRepo.update(admin.id, { password: nextHash });
+      if (!isHashed(admin.password)) {
+        return res.status(401).json({ error: 'Invalid credentials' });
       }
+
+      const passwordValid = await verifyPassword(password, admin.password);
 
       if (!passwordValid) {
         return res.status(401).json({ error: 'Invalid credentials' });
@@ -121,14 +118,11 @@ async function login(req, res, next) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    let passwordValid = false;
-    if (isHashed(user.password)) {
-      passwordValid = await verifyPassword(password, user.password);
-    } else if (user.password === password) {
-      passwordValid = true;
-      const nextHash = await hashPassword(password);
-      await usersRepo.update(user.id, { password: nextHash });
+    if (!isHashed(user.password)) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    const passwordValid = await verifyPassword(password, user.password);
 
     if (!passwordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });

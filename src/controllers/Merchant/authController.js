@@ -65,14 +65,11 @@ async function login(req, res, next) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    let passwordValid = false;
-    if (isHashed(user.password)) {
-      passwordValid = await verifyPassword(password, user.password);
-    } else if (user.password === password) {
-      passwordValid = true;
-      const nextHash = await hashPassword(password);
-      await usersRepo.update(user.id, { password: nextHash });
+    if (!isHashed(user.password)) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    const passwordValid = await verifyPassword(password, user.password);
 
     if (!passwordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
