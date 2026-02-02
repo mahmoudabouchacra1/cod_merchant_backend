@@ -254,6 +254,7 @@ async function me(req, res, next) {
       first_name: admin.first_name,
       last_name: admin.last_name,
       platform_role_id: admin.platform_role_id || null,
+      avatar_url: admin.avatar_url || null,
       permissions
     });
   } catch (err) {

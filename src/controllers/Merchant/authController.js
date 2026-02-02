@@ -138,13 +138,28 @@ async function logout(req, res) {
 }
 
 async function me(req, res) {
-  return res.json({
-    id: req.merchant?.sub,
-    email: req.merchant?.email,
-    merchant_id: req.merchant?.merchant_id,
-    branch_id: req.merchant?.branch_id,
-    merchant_role_id: req.merchant?.merchant_role_id || null
-  });
+  try {
+    const userId = req.merchant?.sub;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const user = await usersRepo.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    return res.json({
+      id: user.id,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      merchant_id: user.merchant_id,
+      branch_id: user.branch_id,
+      merchant_role_id: user.merchant_role_id || null,
+      avatar_url: user.avatar_url || null
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 }
 
 async function register(req, res, next) {
