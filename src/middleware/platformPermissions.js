@@ -3,6 +3,9 @@ const platformAdminsRepo = require('../repository/Platform/platformAdminsRepo');
 function requirePlatformPermission(permissionMap) {
   return async (req, res, next) => {
     try {
+      if (process.env.PLATFORM_ADMIN_FULL_ACCESS === 'true' && req.user?.type === 'platform') {
+        return next();
+      }
       if (!req.user?.sub) {
         return res.status(401).json({ error: 'Unauthorized' });
       }

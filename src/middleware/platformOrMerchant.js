@@ -24,6 +24,9 @@ function allowPlatformOrMerchant(permissionMap) {
       if (platformToken) {
         const payload = jwt.verify(platformToken, process.env.JWT_ACCESS_SECRET);
         req.user = payload;
+        if (process.env.PLATFORM_ADMIN_FULL_ACCESS === 'true' && req.user?.type === 'platform') {
+          return next();
+        }
         const method = req.method === 'HEAD' ? 'GET' : req.method;
         const required = permissionMap[method];
         if (!required) {
