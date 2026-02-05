@@ -63,6 +63,19 @@ repo.findByEmail = async (email) => {
 
 repo.getPermissions = async (adminId) => {
   try {
+    const [roleRows] = await pool.query(
+      `SELECT pr.name, pr.is_system
+       FROM platform_admins pa
+       LEFT JOIN platform_roles pr ON pr.id = pa.platform_role_id
+       WHERE pa.id = ?
+       LIMIT 1`,
+      [adminId]
+    );
+    const role = roleRows[0];
+    if (role && role.is_system && String(role.name).toLowerCase() === 'super admin') {
+      const [allPerms] = await pool.query('SELECT key_name FROM platform_permissions');
+      return allPerms.map((row) => row.key_name);
+    }
     const [rows] = await pool.query(
       `SELECT pp.key_name
        FROM platform_admins pa
