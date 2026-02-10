@@ -1,8 +1,8 @@
 const createCrudRouter = require('../crudRouter');
 const platformAdminsController = require('../../controllers/Platform/platformAdminsController');
-const { upload } = require('../../utils/upload');
+const { uploadMemory } = require('../../utils/upload');
 
 const router = createCrudRouter(platformAdminsController);
-router.post('/:id/photo', upload.single('photo'), platformAdminsController.uploadPhoto);
+router.post('/:id/photo', uploadMemory.single('photo'), platformAdminsController.uploadPhoto);
 
 module.exports = router;

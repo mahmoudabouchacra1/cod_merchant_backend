@@ -1,4 +1,5 @@
 const service = require('../../services/Merchant/productImagesService');
+const { uploadImageBuffer } = require('../../utils/cloudinary');
 const { isPositiveNumber, isNonEmptyString, addError, hasErrors } = require('../../utils/validation');
 
 async function list(req, res, next) {
@@ -136,8 +137,13 @@ async function uploadPhoto(req, res, next) {
     }
     const sortOrder = req.body?.sort_order ? Number(req.body.sort_order) : null;
     const isActive = req.body?.is_active ? String(req.body.is_active) === 'true' : true;
-    const baseUrl = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
-    const url = `${baseUrl}/uploads/${req.file.filename}`;
+    const resultUpload = await uploadImageBuffer(req.file.buffer, {
+      public_id: `product-${productId}-${Date.now()}`
+    });
+    const url = resultUpload?.secure_url || resultUpload?.url;
+    if (!url) {
+      return res.status(400).json({ error: 'Upload failed' });
+    }
     const result = await service.create({
       product_id: productId,
       url,
