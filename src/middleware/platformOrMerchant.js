@@ -59,6 +59,12 @@ function allowPlatformOrMerchant(permissionMap) {
           req.merchant.role_name = role.name;
         }
       }
+      if (req.merchant?.is_client) {
+        const method = req.method === 'HEAD' ? 'GET' : req.method;
+        if (method !== 'GET') {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+      }
       return next();
     } catch (err) {
       return res.status(401).json({ error: 'Unauthorized' });
